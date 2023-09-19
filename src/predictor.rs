@@ -86,7 +86,7 @@ impl Predictor {
             .bind_buffer(&output_buffer, GpuBufferUsage::ReadWrite);
         let program = Program::new(&shader, "main").add_descriptor_set(desc); // Entry point
 
-        let workgroups = (inputs.len() as f32 / 32.0).ceil();
+        let workgroups = (inputs.len() as f32 / 64.0).ceil();
         Kernel::new(&self.framework, program).enqueue(workgroups as u32, 1, 1);
 
         let output = output_buffer.read_vec_blocking()?; // Read back C from GPU

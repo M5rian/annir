@@ -2,14 +2,16 @@ use std::fmt::Debug;
 
 use rand::Rng;
 
+use crate::matrix::Matrix;
+
 #[derive(Clone)]
 pub struct NeuronNetwork {
-    pub input_layer_size: u32,
+    pub input_layer_size: usize,
     pub layers: Vec<Layer>,
 }
 
 impl NeuronNetwork {
-    pub fn create(input_layer_size: u32, layer_builders: Vec<LayerBuilder>) -> NeuronNetwork {
+    pub fn create(input_layer_size: usize, layer_builders: Vec<LayerBuilder>) -> NeuronNetwork {
         let mut layers = Vec::new();
         for (i, layer_builder) in layer_builders.iter().enumerate() {
             if i == 0 {
@@ -43,12 +45,12 @@ impl Debug for NeuronNetwork {
 }
 
 pub struct LayerBuilder {
-    neuron_count: u32,
+    neuron_count: usize,
     activation_function: ActivationFunction,
 }
 
 impl LayerBuilder {
-    pub fn new(neuron_count: u32, activation_function: ActivationFunction) -> LayerBuilder {
+    pub fn new(neuron_count: usize, activation_function: ActivationFunction) -> LayerBuilder {
         Self {
             neuron_count,
             activation_function,
@@ -58,30 +60,27 @@ impl LayerBuilder {
 
 #[derive(Clone)]
 pub struct Layer {
-    pub neuron_count: u32,
-    pub weights: Vec<Vec<f32>>,
+    pub neuron_count: usize,
+    pub weights: Matrix,
     pub biases: Vec<f32>,
     pub activation_function: ActivationFunction,
 }
 
 impl Layer {
     fn random(
-        incoming_connections: u32,
-        neuron_count: u32,
+        incoming_connections: usize,
+        neuron_count: usize,
         activation_function: ActivationFunction,
     ) -> Layer {
-        let mut weights: Vec<Vec<f32>> = Vec::new();
-        let mut biases: Vec<f32> = Vec::new();
-
-        // Create weight and bias matrix for every neuron
-        for _ in 0..neuron_count {
-            let mut neuron_weights: Vec<f32> = Vec::new();
-            for _ in 0..incoming_connections {
-                neuron_weights.push(Layer::random_weight());
+        let mut weights = Matrix::new(neuron_count, incoming_connections);
+        for i in 0..neuron_count as usize {
+            for j in 0..incoming_connections as usize {
+                weights[i][j] = Layer::random_weight()
             }
-            weights.push(neuron_weights);
-            biases.push(0.0);
         }
+
+        let mut biases: Vec<f32> = vec![0.0; neuron_count];
+
         Layer {
             neuron_count,
             weights,
@@ -99,7 +98,7 @@ impl Layer {
 impl Debug for Layer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Layer")
-            .field("weights", &self.weights)
+            .field("weights", &self.weights.to_data())
             .field("biases", &self.biases)
             .finish()
     }

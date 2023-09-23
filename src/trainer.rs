@@ -42,34 +42,35 @@ impl Trainer {
 
         let cloned_network = neuron_network.clone();
 
-        // Iterate through each layer
-        for (layer_index, layer) in cloned_network.clone().layers.iter_mut().enumerate() {
-            println!("layer: {}", layer_index);
-            // Iterate through weights
-            for (weight_row_index, weight_row) in layer.weights.iter_mut().enumerate() {
-                for (weight_index, weight) in weight_row.iter_mut().enumerate() {
-                    println!(
-                        "Weight Row Index: {}, Weight Index: {}",
-                        weight_row_index, weight_index
-                    );
-                    // Adjust the weight and calculate the new cost
-                    *weight += distance;
-                    let new_cost = self.average_cost(predictor, &cloned_network, batch.clone());
-                    let slope = (new_cost - original_cost) / distance;
-                    *weight += -distance + (slope * learn_rate);
+        /*
+                // Iterate through each layer
+                for (layer_index, layer) in cloned_network.clone().layers.iter_mut().enumerate() {
+                    println!("layer: {}", layer_index);
+                    // Iterate through weights
+                    for (weight_row_index, weight_row) in layer.weights.iter_mut().enumerate() {
+                        for (weight_index, weight) in weight_row.iter_mut().enumerate() {
+                            println!(
+                                "Weight Row Index: {}, Weight Index: {}",
+                                weight_row_index, weight_index
+                            );
+                            // Adjust the weight and calculate the new cost
+                            *weight += distance;
+                            let new_cost = self.average_cost(predictor, &cloned_network, batch.clone());
+                            let slope = (new_cost - original_cost) / distance;
+                            *weight += -distance + (slope * learn_rate);
+                        }
+                    }
+
+                    // Iterate through biases
+                    for bias in &mut layer.biases {
+                        // Adjust the bias and calculate the new cost
+                        *bias += distance;
+                        let new_cost = self.average_cost(predictor, &cloned_network, batch.clone());
+                        let slope = (new_cost - original_cost) / distance;
+                        *bias += -distance + (slope * learn_rate);
+                    }
                 }
-            }
-
-            // Iterate through biases
-            for bias in &mut layer.biases {
-                // Adjust the bias and calculate the new cost
-                *bias += distance;
-                let new_cost = self.average_cost(predictor, &cloned_network, batch.clone());
-                let slope = (new_cost - original_cost) / distance;
-                *bias += -distance + (slope * learn_rate);
-            }
-        }
-
+        */
         *neuron_network = cloned_network;
     }
 

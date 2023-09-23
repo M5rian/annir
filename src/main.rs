@@ -11,6 +11,7 @@ use crate::{
     trainer::{Trainer, TrainingData},
 };
 
+mod matrix;
 mod network;
 mod predictor;
 mod trainer;

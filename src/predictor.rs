@@ -63,11 +63,7 @@ impl Predictor {
         layer: &Layer,
     ) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
         // Cpu data
-        let weights = &layer
-            .weights
-            .iter()
-            .flat_map(|inner_vec| inner_vec.iter().cloned())
-            .collect::<Vec<f32>>();
+        let weights = &layer.weights.to_data();
         let biases = &layer.biases;
 
         // GPU buffer creation

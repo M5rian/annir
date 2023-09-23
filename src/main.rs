@@ -5,10 +5,8 @@ use std::{
     vec,
 };
 
-use predictor::ActivationFunction;
-
 use crate::{
-    network::{LayerBuilder, NeuronNetwork},
+    network::{ActivationFunction, LayerBuilder, NeuronNetwork},
     predictor::Predictor,
     trainer::{Trainer, TrainingData},
 };

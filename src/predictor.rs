@@ -8,30 +8,6 @@ pub struct Predictor {
     framework: Framework,
 }
 
-#[derive(Clone)]
-pub enum ActivationFunction {
-    ReLU,
-    SoftMax,
-    Linear,
-}
-
-trait Activation {
-    fn apply(&self, vector: &Vec<f32>, index: usize) -> f32;
-}
-
-impl Activation for ActivationFunction {
-    fn apply(&self, vector: &Vec<f32>, index: usize) -> f32 {
-        match self {
-            ActivationFunction::ReLU => vector[index].max(0.0),
-            ActivationFunction::Linear => vector[index],
-            ActivationFunction::SoftMax => {
-                let sum: f32 = vector.iter().sum();
-                vector[index] / sum
-            }
-        }
-    }
-}
-
 impl Predictor {
     pub fn default() -> Predictor {
         Self {

@@ -2,8 +2,6 @@ use std::fmt::Debug;
 
 use rand::Rng;
 
-use crate::predictor::ActivationFunction;
-
 #[derive(Clone)]
 pub struct NeuronNetwork {
     pub input_layer_size: u32,
@@ -104,5 +102,25 @@ impl Debug for Layer {
             .field("weights", &self.weights)
             .field("biases", &self.biases)
             .finish()
+    }
+}
+
+#[derive(Clone)]
+pub enum ActivationFunction {
+    ReLU,
+    SoftMax,
+    Linear,
+}
+
+impl ActivationFunction {
+    pub fn apply(&self, vector: &Vec<f32>, index: usize) -> f32 {
+        match self {
+            ActivationFunction::ReLU => vector[index].max(0.0),
+            ActivationFunction::Linear => vector[index],
+            ActivationFunction::SoftMax => {
+                let sum: f32 = vector.iter().sum();
+                vector[index] / sum
+            }
+        }
     }
 }

@@ -1,3 +1,7 @@
+use crate::{
+    network::{ActivationFunction, LayerBuilder, NeuronNetwork},
+    trainer::TrainingData,
+};
 use std::{
     fs::File,
     io::{BufReader, Read},
@@ -5,15 +9,9 @@ use std::{
     vec,
 };
 
-use crate::{
-    network::{ActivationFunction, LayerBuilder, NeuronNetwork},
-    predictor::Predictor,
-    trainer::{Trainer, TrainingData},
-};
-
+mod gpu;
 mod matrix;
 mod network;
-mod predictor;
 mod trainer;
 
 fn main() {
@@ -23,31 +21,22 @@ fn main() {
 
     let mut neuron_network = NeuronNetwork::create(
         28 * 28,
-        vec![
-            LayerBuilder::new(10, ActivationFunction::ReLU),
-            LayerBuilder::new(10, ActivationFunction::SoftMax),
-        ],
+        vec![LayerBuilder::new(10, ActivationFunction::ReLU), LayerBuilder::new(10, ActivationFunction::SoftMax)],
     );
     println!("{:?}", neuron_network);
 
-    let predictor = Predictor::default();
-
     let now = Instant::now();
-    let prediction = predictor.predict(&neuron_network, training_data[0].inputs.clone());
+    let prediction = neuron_network.feed_forward(training_data[0].inputs.clone());
     println!("Prediction took {}ms", now.elapsed().as_millis());
     println!("{:?}", prediction);
 
-    let trainer = Trainer {
-        training_data,
-        batch_size: 5,
-    };
-    trainer.train(&predictor, &mut neuron_network, 6);
+    //let trainer = Trainer { training_data, batch_size: 5 };
+    //trainer.train(&predictor, &mut neuron_network, 6);
 }
 
 fn load_training_data() -> Vec<TrainingData> {
     // Open the label file
-    let labels_file =
-        File::open("./mnist-database/train-labels").expect("Failed to read label file");
+    let labels_file = File::open("./mnist-database/train-labels").expect("Failed to read label file");
     let mut labels_reader = BufReader::new(labels_file);
 
     // Read the magic number from the label file
@@ -58,9 +47,7 @@ fn load_training_data() -> Vec<TrainingData> {
 
     // Read the number of items from the label file
     let mut number_of_items_buffer = [0; 4];
-    labels_reader
-        .read_exact(&mut number_of_items_buffer)
-        .unwrap();
+    labels_reader.read_exact(&mut number_of_items_buffer).unwrap();
     let number_of_items = i32::from_be_bytes(number_of_items_buffer);
     println!("Number of items: {}", number_of_items);
 
@@ -83,23 +70,18 @@ fn load_training_data() -> Vec<TrainingData> {
     println!("25th Label: {}", labels[24]);
 
     // Open the images file
-    let images_file =
-        File::open("./mnist-database/train-images").expect("Failed to read images file");
+    let images_file = File::open("./mnist-database/train-images").expect("Failed to read images file");
     let mut images_reader = BufReader::new(images_file);
 
     // Read the magic number from the images file
     let mut magic_number_images_buffer = [0; 4];
-    images_reader
-        .read_exact(&mut magic_number_images_buffer)
-        .unwrap();
+    images_reader.read_exact(&mut magic_number_images_buffer).unwrap();
     let magic_number_images = i32::from_be_bytes(magic_number_images_buffer);
     println!("Magic number (images): {}", magic_number_images);
 
     // Read the number of images, rows, and columns from the images file
     let mut number_of_images_buffer = [0; 4];
-    images_reader
-        .read_exact(&mut number_of_images_buffer)
-        .unwrap();
+    images_reader.read_exact(&mut number_of_images_buffer).unwrap();
     let number_of_images = i32::from_be_bytes(number_of_images_buffer);
     println!("Number of images: {}", number_of_images);
 

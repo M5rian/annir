@@ -1,6 +1,6 @@
 use rand::seq::SliceRandom;
 
-use crate::{predictor::Predictor, NeuronNetwork};
+use crate::{gpu::Gpu, NeuronNetwork};
 
 pub struct Trainer {
     pub training_data: Vec<TrainingData>,
@@ -14,7 +14,7 @@ pub struct TrainingData {
 }
 
 impl Trainer {
-    pub fn train(&self, predictor: &Predictor, neuron_network: &mut NeuronNetwork, num: i32) {
+    pub fn train(&self, predictor: &Gpu, neuron_network: &mut NeuronNetwork, num: i32) {
         for _index in 0..num {
             self.learn(predictor, neuron_network);
         }
@@ -28,7 +28,7 @@ impl Trainer {
             .collect::<Vec<TrainingData>>()
     }
 
-    fn learn(&self, predictor: &Predictor, neuron_network: &mut NeuronNetwork) {
+    fn learn(&self, predictor: &Gpu, neuron_network: &mut NeuronNetwork) {
         // Constants for learning
         let distance = 0.00001;
         let learn_rate = 0.01;
@@ -74,12 +74,7 @@ impl Trainer {
         *neuron_network = cloned_network;
     }
 
-    fn average_cost(
-        &self,
-        predictor: &Predictor,
-        neuron_network: &NeuronNetwork,
-        training_data: Vec<TrainingData>,
-    ) -> f32 {
+    fn average_cost(&self, predictor: &Gpu, neuron_network: &NeuronNetwork, training_data: Vec<TrainingData>) -> f32 {
         let training_data_size = training_data.len() as f32; // TODO casting is bad ig
         let mut total_cost = 0.0;
         for dataset in training_data {
@@ -88,13 +83,8 @@ impl Trainer {
         total_cost / training_data_size
     }
 
-    fn cost(
-        &self,
-        predictor: &Predictor,
-        neuron_network: &NeuronNetwork,
-        training_data: TrainingData,
-    ) -> f32 {
-        let prediction = predictor.predict(neuron_network, training_data.inputs);
+    fn cost(&self, predictor: &Gpu, neuron_network: &NeuronNetwork, training_data: TrainingData) -> f32 {
+        let prediction = neuron_network.feed_forward(training_data.inputs);
         let mut loss = 0.0;
         for (i, expected_output) in training_data.outputs.iter().enumerate() {
             loss += self.calculate_loss(*expected_output, prediction[i]);

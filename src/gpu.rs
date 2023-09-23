@@ -2,17 +2,15 @@ use std::vec;
 
 use gpgpu::{BufOps, DescriptorSet, Framework, GpuBuffer, GpuBufferUsage, Kernel, Program, Shader};
 
-use crate::{network::Layer, NeuronNetwork};
+use crate::network::Layer;
 
-pub struct Predictor {
+pub struct Gpu {
     framework: Framework,
 }
 
-impl Predictor {
-    pub fn default() -> Predictor {
-        Self {
-            framework: Framework::default(),
-        }
+impl Gpu {
+    pub fn default() -> Gpu {
+        Self { framework: Framework::default() }
     }
 
     pub fn run_shader(&self) {
@@ -39,29 +37,7 @@ impl Predictor {
         println!("{:?}", output);
     }
 
-    pub fn predict(&self, neuron_network: &NeuronNetwork, inputs: Vec<f32>) -> Vec<f32> {
-        if inputs.len() != usize::try_from(neuron_network.input_layer_size).unwrap() {
-            panic!(
-                "Inputs don't match input neuron count! (Inputs: {}, Neurons: {})",
-                inputs.len(),
-                neuron_network.input_layer_size
-            )
-        }
-
-        // Calcuate each layer and parse output back to next layer
-        let mut inputs = inputs;
-        for layer in &neuron_network.layers {
-            let someting = self.predict_layer(&inputs, layer).unwrap();
-            inputs = someting;
-        }
-        inputs
-    }
-
-    fn predict_layer(
-        &self,
-        inputs: &Vec<f32>,
-        layer: &Layer,
-    ) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
+    pub fn predict_layer(&self, inputs: &Vec<f32>, layer: &Layer) -> Result<Vec<f32>, Box<dyn std::error::Error>> {
         // Cpu data
         let weights = &layer.weights.to_data();
         let biases = &layer.biases;
@@ -70,8 +46,7 @@ impl Predictor {
         let inputs_buffer = GpuBuffer::from_slice(&self.framework, inputs);
         let weight_buffer = GpuBuffer::from_slice(&self.framework, weights);
         let bias_buffer = GpuBuffer::from_slice(&self.framework, biases);
-        let output_buffer =
-            GpuBuffer::<f32>::with_capacity(&self.framework, layer.neuron_count as u64);
+        let output_buffer = GpuBuffer::<f32>::with_capacity(&self.framework, layer.neuron_count as u64);
 
         // Shader load from WGSL source file
         let shader = Shader::from_wgsl_file(&self.framework, "src/shader.wgsl")?;

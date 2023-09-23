@@ -1,8 +1,6 @@
-use std::fmt::Debug;
-
+use crate::{gpu::Gpu, matrix::Matrix};
 use rand::Rng;
-
-use crate::matrix::Matrix;
+use std::fmt::Debug;
 
 #[derive(Clone)]
 pub struct NeuronNetwork {
@@ -13,25 +11,31 @@ pub struct NeuronNetwork {
 impl NeuronNetwork {
     pub fn create(input_layer_size: usize, layer_builders: Vec<LayerBuilder>) -> NeuronNetwork {
         let mut layers = Vec::new();
-        for (i, layer_builder) in layer_builders.iter().enumerate() {
-            if i == 0 {
-                layers.push(Layer::random(
-                    input_layer_size,
-                    layer_builder.neuron_count,
-                    layer_builder.activation_function.clone(),
-                ));
-            } else {
-                layers.push(Layer::random(
-                    layers[i - 1].neuron_count,
-                    layer_builder.neuron_count,
-                    layer_builder.activation_function.clone(),
-                ));
-            }
+        let mut prev_neuron_count = input_layer_size;
+
+        for layer_builder in &layer_builders {
+            let neuron_count = layer_builder.neuron_count;
+            let activation_function = layer_builder.activation_function.clone();
+            layers.push(Layer::random(prev_neuron_count, neuron_count, activation_function.clone()));
+            prev_neuron_count = neuron_count;
         }
-        NeuronNetwork {
-            input_layer_size,
-            layers,
+
+        NeuronNetwork { input_layer_size, layers }
+    }
+
+    pub fn feed_forward(&self, inputs: Vec<f32>) -> Vec<f32> {
+        if inputs.len() != self.input_layer_size {
+            panic!("Inputs don't match input neuron count! (Inputs: {}, Neurons: {})", inputs.len(), &self.input_layer_size);
         }
+
+        let gpu = Gpu::default();
+        // Calcuate each layer and parse output back to next layer
+        let mut inputs = inputs;
+        for layer in &self.layers {
+            let someting = gpu.predict_layer(&inputs, layer).unwrap();
+            inputs = someting;
+        }
+        inputs
     }
 }
 
@@ -67,11 +71,7 @@ pub struct Layer {
 }
 
 impl Layer {
-    fn random(
-        incoming_connections: usize,
-        neuron_count: usize,
-        activation_function: ActivationFunction,
-    ) -> Layer {
+    fn random(incoming_connections: usize, neuron_count: usize, activation_function: ActivationFunction) -> Layer {
         let mut weights = Matrix::new(neuron_count, incoming_connections);
         for i in 0..neuron_count as usize {
             for j in 0..incoming_connections as usize {
@@ -97,10 +97,7 @@ impl Layer {
 
 impl Debug for Layer {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Layer")
-            .field("weights", &self.weights.to_data())
-            .field("biases", &self.biases)
-            .finish()
+        f.debug_struct("Layer").field("weights", &self.weights.to_data()).field("biases", &self.biases).finish()
     }
 }
 

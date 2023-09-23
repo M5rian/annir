@@ -1,9 +1,35 @@
+use std::vec;
+
 use gpgpu::{BufOps, DescriptorSet, Framework, GpuBuffer, GpuBufferUsage, Kernel, Program, Shader};
 
-use crate::{Layer, NeuronNetwork};
+use crate::{network::Layer, NeuronNetwork};
 
 pub struct Predictor {
     framework: Framework,
+}
+
+#[derive(Clone)]
+pub enum ActivationFunction {
+    ReLU,
+    SoftMax,
+    Linear,
+}
+
+trait Activation {
+    fn apply(&self, vector: &Vec<f32>, index: usize) -> f32;
+}
+
+impl Activation for ActivationFunction {
+    fn apply(&self, vector: &Vec<f32>, index: usize) -> f32 {
+        match self {
+            ActivationFunction::ReLU => vector[index].max(0.0),
+            ActivationFunction::Linear => vector[index],
+            ActivationFunction::SoftMax => {
+                let sum: f32 = vector.iter().sum();
+                vector[index] / sum
+            }
+        }
+    }
 }
 
 impl Predictor {
@@ -90,6 +116,10 @@ impl Predictor {
         Kernel::new(&self.framework, program).enqueue(workgroups as u32, 1, 1);
 
         let output = output_buffer.read_vec_blocking()?; // Read back C from GPU
-        Ok(output)
+        let mut activation_applied = Vec::with_capacity(output.len());
+        for i in 0..output.len() {
+            activation_applied.push(layer.activation_function.apply(&output, i))
+        }
+        Ok(activation_applied)
     }
 }

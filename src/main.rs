@@ -1,18 +1,19 @@
 use std::{
-    fmt::Debug,
     fs::File,
     io::{BufReader, Read},
     time::Instant,
     vec,
 };
 
-use rand::Rng;
+use predictor::ActivationFunction;
 
 use crate::{
+    network::{LayerBuilder, NeuronNetwork},
     predictor::Predictor,
     trainer::{Trainer, TrainingData},
 };
 
+mod network;
 mod predictor;
 mod trainer;
 
@@ -21,7 +22,13 @@ fn main() {
     println!("Inputs: {}", training_data[0].inputs.len());
     println!("Outputs: {}", training_data[0].outputs.len());
 
-    let mut neuron_network = NeuronNetwork::from_layer_sizes(vec![28 * 28, 50, 10]);
+    let mut neuron_network = NeuronNetwork::create(
+        28 * 28,
+        vec![
+            LayerBuilder::new(10, ActivationFunction::ReLU),
+            LayerBuilder::new(10, ActivationFunction::SoftMax),
+        ],
+    );
     println!("{:?}", neuron_network);
 
     let predictor = Predictor::default();
@@ -136,83 +143,4 @@ fn load_training_data() -> Vec<TrainingData> {
         training_set.push(training_data);
     }
     training_set
-}
-
-#[derive(Clone)]
-pub struct NeuronNetwork {
-    input_layer_size: u32,
-    layers: Vec<Layer>,
-}
-
-impl NeuronNetwork {
-    fn from_layer_sizes(mut layer_sizes: Vec<u32>) -> NeuronNetwork {
-        let mut layers: Vec<Layer> = Vec::new();
-        for (layer_index, layer_size) in layer_sizes.iter().enumerate() {
-            if layer_index == 0 {
-                continue;
-            }
-
-            let previous_layer_size = layer_sizes[layer_index - 1];
-            let layer = Layer::random(previous_layer_size, *layer_size);
-            layers.push(layer);
-        }
-
-        let input_layer_size = layer_sizes.remove(0);
-
-        NeuronNetwork {
-            input_layer_size,
-            layers,
-        }
-    }
-}
-
-impl Debug for NeuronNetwork {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("NeuronNetwork")
-            .field("input_layer_size", &self.input_layer_size)
-            .field("layer_count", &self.layers.len())
-            .finish()
-    }
-}
-
-#[derive(Clone)]
-struct Layer {
-    neuron_count: u32,
-    weights: Vec<Vec<f32>>,
-    biases: Vec<f32>,
-}
-
-impl Layer {
-    fn random(incoming_connections: u32, neuron_count: u32) -> Layer {
-        let mut weights: Vec<Vec<f32>> = Vec::new();
-        let mut biases: Vec<f32> = Vec::new();
-
-        for _ in 0..neuron_count {
-            let mut neuron_weights: Vec<f32> = Vec::new();
-            for _ in 0..incoming_connections {
-                neuron_weights.push(Layer::random_weight());
-            }
-            weights.push(neuron_weights);
-            biases.push(0.0);
-        }
-        Layer {
-            neuron_count,
-            weights,
-            biases,
-        }
-    }
-
-    /// Generates random weight between 0 and 1.
-    fn random_weight() -> f32 {
-        rand::thread_rng().gen()
-    }
-}
-
-impl Debug for Layer {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Layer")
-            .field("weights", &self.weights)
-            .field("biases", &self.biases)
-            .finish()
-    }
 }
